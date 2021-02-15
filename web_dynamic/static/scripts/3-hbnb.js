@@ -1,70 +1,48 @@
-$(document).ready(InputInformation)
-
-function InputInformation() {
-  var objs = {};
-  $('input').change(function () {
+$(document).ready(function () {
+  const amenities = {};
+  $('input[type="checkbox"]').change(function (elm) {
     if ($(this).is(':checked')) {
-      objs[$(this).attr('data-name')] = $(this).attr('data-id');
-    } else if ($(this).is(':not(:checked)')) {
-      delete objs[$(this).attr('data-name')];
+      amenities[$(this).attr('data-name')] = $(this).attr('data-id');
+      $('.amenities h4').text(Object.keys(amenities));
+    } else {
+      delete amenities[$(this).attr('data-name')];
     }
-    const names = Object.keys(objs);
-    $('.amenities h4').text(names.sort().join(', '));
+    const dataNames = Object.keys(amenities);
+    $('.amenities h4').text(dataNames.join(', '));
   });
 
-  apiStatus();
-}
-
-function apiStatus () {
-  $.get('http://0.0.0.0:5001/api/v1/status/', (data, textStatus) => {
-    if (textStatus === 'success' && data.status === 'OK') {
+  $.get('http://0.0.0.0:5001/api/v1/status/', function (data, textStatus) {
+    if (textStatus === 'success') {
       $('#api_status').addClass('available');
     } else {
       $('#api_status').removeClass('available');
     }
   });
-}
-
-$.ajax({
-  url: 'http://0.0.0.0:5001/api/v1/places_search',
-  type: 'POST',
-  success: function (data) {
-    const resultSize = data.length;
-    if (resultSize === 0) {
-      console.log('No data found');
-      return;
+  $.ajax({
+    url: 'http://0.0.0.0:5001/api/v1/places_search/',
+    type: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: JSON.stringify({}),
+    success: function (response) {
+      response.forEach((element, index) => {
+        console.log(element);
+        $('SECTION.places').append(
+          `<article>
+              <div class="title_box>
+                <h2>${element.name}</h2>
+                <div class="price_by_night">${element.price_by_night}</div>
+              </div>
+              <div class="information">
+                <div class="max_guest"> ${element.max_guest} Guest(s)</div>
+                <div class="number_rooms">${element.number_rooms} Bedroom(s) </div>
+                <div class="number_bathrooms"> ${element.number_bathrooms} Bathroom(s)
+              </div>
+              <div class="description"> ${element.description} </div>
+          </article>`);
+      });
+    },
+    error: function (error) {
+      console.log(error);
     }
-    for (let i = 0; i < resultSize; i++) {
-      let guestPluralString = '';
-      const maxGuest = data[i].max_guest;
-      if (maxGuest > 1) {
-        guestPluralString = 's';
-      }
-      let roomPluralString = '';
-      const numberRooms = data[i].number_rooms;
-      if (numberRooms > 1) {
-        roomPluralString = 's';
-      }
-      let bathroomPluralString = '';
-      const numberBathrooms = data[i].number_bathrooms;
-      if (numberBathrooms > 1) {
-        bathroomPluralString = 's';
-      }
-      $('.places').append(
-        '<article>' +
-          '<div class="title_box">' +
-            '<h2>' + data[i].name + '</h2>' +
-            '<div class="price_by_night">' + '$' + data[i].price_by_night + '</div>' +
-          '</div>' +
-        '<div class="information">' +
-          '<div class="max_guest">' + maxGuest + ' Guest' + guestPluralString + '</div>' +
-          '<div class="number_rooms">' + numberRooms + ' Bedroom' + roomPluralString + '</div>' +
-          '<div class="number_bathrooms">' + numberBathrooms + ' Bathroom' + bathroomPluralString + '</div>' +
-        '</div>' +
-        '<div class="description">' + data[i].description + '</div>' +
-        '</article>');
-    }
-  },
-  data: JSON.stringify({}),
-  headers: { 'Content-Type': 'application/json' }
+  });
 });
